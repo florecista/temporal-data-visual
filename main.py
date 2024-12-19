@@ -142,6 +142,9 @@ class TimelineWidget(QWidget):
         # Initial X-Axis Labels Update
         self.update_x_axis_labels(6, 18)
 
+        # Trigger Initial Alignment
+        self.on_slider_change()
+
     def update_x_axis_labels(self, x_min, x_max):
         """Update the X-axis labels based on the slider range."""
         # Clear existing labels
