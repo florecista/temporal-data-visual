@@ -165,7 +165,7 @@ class TimelineWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Custom Timeline with Hover Tooltips")
+        self.setWindowTitle("Temporal Data Visualisation")
         self.setCentralWidget(TimelineWidget())
         self.resize(1024, 600)
 
