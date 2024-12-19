@@ -52,9 +52,9 @@ class CustomChart(pg.PlotWidget):
         for i, label in enumerate(self.y_labels):
             person_events = self.events.get(label, {})
             for event, time in person_events.items():
-                if event == "truth":
-                    color = colors["truth"]  # Truth event (Object A)
-                elif time == self.events["Object A"]["Event2"]:
+                if event == "Flight Departure":
+                    color = colors["truth"]  # Truth event (Flight XYZ)
+                elif time == self.events["Flight XYZ"]["Flight Departure"]:
                     color = colors["match"]  # Matches truth
                 else:
                     color = colors["discrepancy"]  # Discrepancy
@@ -82,10 +82,23 @@ class TimelineWidget(QWidget):
 
         # Event Data
         self.events = {
-            "Person A": {"Event1": 6, "Event2": 12, "Event3": 17},
-            "Person B": {"Event2": 12.25, "Event4": 18.25},
-            "Person C": {"Event2": 12, "Event5": 6, "Event6": 18},
-            "Object A": {"Event2": 12},
+            "Tom": {
+                "Left Home": 6,
+                "Flight Departure": 12,
+                "Flight Arrival": 17,
+            },
+            "Dick": {
+                "Flight Departure": 12.25,  # Discrepancy
+                "Left Home": 6.25,
+            },
+            "Harry": {
+                "Left Home": 6,
+                "Flight Departure": 12,
+                "Flight Arrival": 18,
+            },
+            "Flight XYZ": {
+                "Flight Departure": 12,  # Truth
+            },
         }
 
         # Y-Axis Labels
