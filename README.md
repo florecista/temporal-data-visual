@@ -2,4 +2,4 @@
 
 This is a starting point for building bigger and better temporal data visualisations.
 
-<img src="https://github.com/user-attachments/assets/5a1b2e3a-3b5f-424c-a3b6-854fdb54956c" width="75%" height="75%" />
+<img src="https://github.com/user-attachments/assets/3e692749-47dc-4d1b-8f65-960ba6c78997" width="75%" height="75%" />
