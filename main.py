@@ -1,4 +1,5 @@
 import sys
+import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QToolTip
 )
@@ -80,26 +81,8 @@ class TimelineWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Event Data
-        self.events = {
-            "Tom": {
-                "Left Home": 6,
-                "Flight Departure": 12,
-                "Flight Arrival": 17,
-            },
-            "Dick": {
-                "Flight Departure": 12.25,  # Discrepancy
-                "Left Home": 6.25,
-            },
-            "Harry": {
-                "Left Home": 6,
-                "Flight Departure": 12,
-                "Flight Arrival": 18,
-            },
-            "Flight XYZ": {
-                "Flight Departure": 12,  # Truth
-            },
-        }
+        # Load Event Data from JSON File
+        self.events = self.load_event_data("events.json")
 
         # Y-Axis Labels
         self.y_labels = list(self.events.keys())
@@ -144,6 +127,14 @@ class TimelineWidget(QWidget):
 
         # Trigger Initial Alignment
         self.on_slider_change()
+
+    def load_event_data(self, file_path):
+        """Load event data from a JSON file."""
+        try:
+            with open(file_path, "r") as file:
+                return json.load(file)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load event data: {e}")
 
     def update_x_axis_labels(self, x_min, x_max):
         """Update the X-axis labels based on the slider range."""

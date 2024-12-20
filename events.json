@@ -1,0 +1,19 @@
+{
+    "Tom": {
+        "Left Home": 6,
+        "Flight Departure": 12,
+        "Flight Arrival": 17
+    },
+    "Dick": {
+        "Flight Departure": 12.25,
+        "Left Home": 6.25
+    },
+    "Harry": {
+        "Left Home": 6,
+        "Flight Departure": 12,
+        "Flight Arrival": 18
+    },
+    "Flight XYZ": {
+        "Flight Departure": 12
+    }
+}
