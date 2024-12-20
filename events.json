@@ -1,19 +1,65 @@
 {
     "Tom": {
-        "Left Home": 6,
-        "Flight Departure": 12,
-        "Flight Arrival": 17
+        "Left Home": "2023-12-01T06:00:00",
+        "Flight Departure": {
+            "DateTime": "2023-12-01T12:00:00",
+            "Port Origin": "JFK"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-02T17:00:00",
+            "Port Destination": "LAX"
+        }
     },
     "Dick": {
-        "Flight Departure": 12.25,
-        "Left Home": 6.25
+        "Left Home": "2023-12-01T06:00:00",
+        "Flight Departure": {
+            "DateTime": "2023-12-01T06:00:00",
+            "Port Origin": "ORD"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-01T18:00:00",
+            "Port Destination": "ATL"
+        }
     },
     "Harry": {
-        "Left Home": 6,
-        "Flight Departure": 12,
-        "Flight Arrival": 18
+        "Left Home": "2023-12-01T06:00:00",
+        "Flight Departure": {
+            "DateTime": "2023-12-01T12:00:00",
+            "Port Origin": "JFK"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-02T18:00:00",
+            "Port Destination": "SFO"
+        }
     },
-    "Flight XYZ": {
-        "Flight Departure": 12
+    "Flight 101": {
+        "Flight Departure": {
+            "DateTime": "2023-12-01T06:00:00",
+            "Port Origin": "ORD"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-01T18:00:00",
+            "Port Destination": "ATL"
+        }
+    },
+    "Flight 102": {
+        "Flight Departure": {
+            "DateTime": "2023-12-01T12:00:00",
+            "Port Origin": "JFK"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-02T17:00:00",
+            "Port Destination": "LAX"
+        }
+    },
+    "Flight 103": {
+        "Flight Departure": {
+            "DateTime": "2023-12-01T12:00:00",
+            "Port Origin": "JFK"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-02T18:00:00",
+            "Port Destination": "SFO"
+        }
     }
 }
