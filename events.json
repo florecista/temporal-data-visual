@@ -1,65 +1,65 @@
 {
     "Tom": {
-        "Left Home": "2023-12-01T06:00:00",
+        "Left Home": "2023-12-01T07:15:00",
         "Flight Departure": {
-            "DateTime": "2023-12-01T12:00:00",
-            "Port Origin": "JFK"
-        },
-        "Flight Arrival": {
-            "DateTime": "2023-12-02T17:00:00",
-            "Port Destination": "LAX"
-        }
-    },
-    "Dick": {
-        "Left Home": "2023-12-01T06:00:00",
-        "Flight Departure": {
-            "DateTime": "2023-12-01T06:00:00",
+            "DateTime": "2023-12-01T09:30:00",
             "Port Origin": "ORD"
         },
         "Flight Arrival": {
-            "DateTime": "2023-12-01T18:00:00",
+            "DateTime": "2023-12-01T11:45:00",
             "Port Destination": "ATL"
         }
     },
-    "Harry": {
-        "Left Home": "2023-12-01T06:00:00",
+    "Dick": {
+        "Left Home": "2023-12-02T06:45:00",
         "Flight Departure": {
-            "DateTime": "2023-12-01T12:00:00",
-            "Port Origin": "JFK"
+            "DateTime": "2023-12-02T08:15:00",
+            "Port Origin": "ATL"
         },
         "Flight Arrival": {
-            "DateTime": "2023-12-02T18:00:00",
-            "Port Destination": "SFO"
+            "DateTime": "2023-12-02T10:50:00",
+            "Port Destination": "JFK"
+        }
+    },
+    "Harry": {
+        "Left Home": "2023-12-03T09:00:00",
+        "Flight Departure": {
+            "DateTime": "2023-12-03T11:30:00",
+            "Port Origin": "LAX"
+        },
+        "Flight Arrival": {
+            "DateTime": "2023-12-03T15:00:00",
+            "Port Destination": "ORD"
         }
     },
     "Flight 101": {
         "Flight Departure": {
-            "DateTime": "2023-12-01T06:00:00",
+            "DateTime": "2023-12-01T09:30:00",
             "Port Origin": "ORD"
         },
         "Flight Arrival": {
-            "DateTime": "2023-12-01T18:00:00",
+            "DateTime": "2023-12-01T11:45:00",
             "Port Destination": "ATL"
         }
     },
     "Flight 102": {
         "Flight Departure": {
-            "DateTime": "2023-12-01T12:00:00",
-            "Port Origin": "JFK"
+            "DateTime": "2023-12-02T08:15:00",
+            "Port Origin": "ATL"
         },
         "Flight Arrival": {
-            "DateTime": "2023-12-02T17:00:00",
-            "Port Destination": "LAX"
+            "DateTime": "2023-12-02T10:50:00",
+            "Port Destination": "JFK"
         }
     },
     "Flight 103": {
         "Flight Departure": {
-            "DateTime": "2023-12-01T12:00:00",
-            "Port Origin": "JFK"
+            "DateTime": "2023-12-03T11:30:00",
+            "Port Origin": "LAX"
         },
         "Flight Arrival": {
-            "DateTime": "2023-12-02T18:00:00",
-            "Port Destination": "SFO"
+            "DateTime": "2023-12-03T15:00:00",
+            "Port Destination": "ORD"
         }
     }
 }
