@@ -398,13 +398,23 @@ class MainWindow(QMainWindow):
         self.create_menu()
 
     def create_menu(self):
-        """Create the menu with themes."""
         # Main menu bar
         menu_bar = self.menuBar()
 
-        # Options menu
-        options_menu = menu_bar.addMenu("Options")
+        # File menu
+        file_menu = menu_bar.addMenu("File")
 
+        # Exit action
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+X")  # Add keyboard shortcut
+        exit_action.triggered.connect(self.close_application)
+        file_menu.addAction(exit_action)
+
+        # Options menu (existing menu)
+        options_menu = menu_bar.addMenu("Options")
+        self.create_options_menu(options_menu)
+
+    def create_options_menu(self, options_menu):
         # Themes submenu
         themes_menu = QMenu("Themes", self)
         options_menu.addMenu(themes_menu)
@@ -421,7 +431,6 @@ class MainWindow(QMainWindow):
         self.theme_actions["Classic"].setChecked(True)
 
     def change_theme(self, theme):
-        """Change the theme based on the selected menu item."""
         # Uncheck all actions
         for action in self.theme_actions.values():
             action.setChecked(False)
@@ -433,13 +442,16 @@ class MainWindow(QMainWindow):
         self.apply_theme(theme)
 
     def apply_theme(self, theme):
-        """Apply the selected theme."""
         if theme == "Classic":
             self.setStyleSheet("")  # Default style
             self.central_widget.chart.setBackground("w")
         elif theme == "Dark":
             self.setStyleSheet("background-color: #121212; color: #FFFFFF;")
             self.central_widget.chart.setBackground("#121212")
+
+    def close_application(self):
+        QApplication.quit()
+
 
 
 if __name__ == "__main__":
