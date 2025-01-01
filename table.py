@@ -237,7 +237,7 @@ class MainWindow(QMainWindow):
         """Set up the slider panel with proper spacing and layout."""
         # Create the range slider panel
         self.range_slider_panel = QWidget()
-        self.range_slider_panel.setFixedHeight(150)  # Fixed height for the panel containing the slider + labels
+        self.range_slider_panel.setFixedHeight(120)  # Fixed height for the panel containing the slider + labels
         panel_layout = QVBoxLayout(self.range_slider_panel)
 
         # Add an expanding spacer at the top to push everything down
