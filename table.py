@@ -11,20 +11,51 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtCore import Qt
 
+from PyQt5.QtWidgets import QToolTip
+
 
 class EventDelegate(QStyledItemDelegate):
-    """Custom delegate to render events as dots in table cells."""
+    """Custom delegate to render events as dots in table cells and show hover details."""
+
     def paint(self, painter, option, index):
         painter.save()
-        if index.data() == "Dot":
-            painter.setBrush(QColor("#2E8B57"))  # Green for events
-            radius = min(option.rect.width(), option.rect.height()) // 4
-            x_center = option.rect.center().x()
-            y_center = option.rect.center().y()
-            painter.drawEllipse(x_center - radius, y_center - radius, radius * 2, radius * 2)
+
+        # Retrieve custom data from the item
+        item_data = index.data(Qt.UserRole)
+        if isinstance(item_data, dict) and "time_fraction" in item_data:
+            time_fraction = item_data["time_fraction"]  # Value between 0 and 1
+            dot_color = item_data.get("color", "#2E8B57")  # Default green
+
+            # Set brush color
+            painter.setBrush(QColor(dot_color))
+
+            # Calculate dot size and position
+            radius = min(option.rect.width(), option.rect.height()) // 6  # Adjust size for smaller dot
+            x_pos = int(option.rect.left() + time_fraction * option.rect.width())  # Convert to int
+            y_center = int(option.rect.center().y())  # Convert to int
+
+            # Draw the dot
+            painter.drawEllipse(x_pos - radius, y_center - radius, radius * 2, radius * 2)
         else:
             super().paint(painter, option, index)
+
         painter.restore()
+
+    def helpEvent(self, event, view, option, index):
+        """Show a tooltip with event details."""
+        if not event or not index.isValid():
+            return False
+
+        # Retrieve custom data from the item
+        item_data = index.data(Qt.UserRole)
+        if isinstance(item_data, dict) and "title" in item_data and "time" in item_data:
+            # Display the title and time in a tooltip
+            title = item_data["title"]
+            time = item_data["time"]
+            QToolTip.showText(event.globalPos(), f"{title}\n{time}", view)
+            return True
+
+        return super().helpEvent(event, view, option, index)
 
 
 class TimelineTable(QTableWidget):
@@ -135,6 +166,13 @@ class TimelineTable(QTableWidget):
 
             # Populate event data in the remaining columns
             for col, time_label in enumerate(self.time_intervals):
+                # Calculate the start and end of the interval
+                interval_start = datetime.strptime(time_label, "%I:%M %p").replace(
+                    year=base_date.year, month=base_date.month, day=base_date.day
+                )
+                interval_end = interval_start + timedelta(hours=6)
+
+                # Match events to this interval
                 for event_name, details in entity_events.items():
                     if isinstance(details, dict) and "DateTime" in details:
                         event_time = datetime.fromisoformat(details["DateTime"])
@@ -143,15 +181,19 @@ class TimelineTable(QTableWidget):
                     else:
                         continue
 
-                    # Align time_label with the dataset's min_datetime
-                    interval_start = datetime.strptime(time_label, "%I:%M %p").replace(
-                        year=base_date.year, month=base_date.month, day=base_date.day
-                    )
-                    interval_end = interval_start + timedelta(hours=6)
-
-                    # Match time intervals
                     if interval_start <= event_time < interval_end:
-                        self.setItem(current_row, col + 1, QTableWidgetItem("Dot"))  # Offset by 1 for the entity column
+                        # Calculate time_fraction
+                        time_fraction = (event_time - interval_start).total_seconds() / (6 * 3600)
+                        # Create a table widget item
+                        item = QTableWidgetItem("Dot")
+                        # Store custom data in the item's data model
+                        item.setData(Qt.UserRole, {
+                            "time_fraction": time_fraction,
+                            "color": "#2E8B57",
+                            "title": event_name,
+                            "time": event_time.strftime("%d-%b %I:%M %p"),
+                        })
+                        self.setItem(current_row, col + 1, item)
                         break
 
             current_row += 1  # Move to the next row
