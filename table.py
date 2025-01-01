@@ -10,7 +10,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLabel,
-    QHBoxLayout, QToolTip, QSpacerItem, QSizePolicy,
+    QHBoxLayout,
+    QToolTip,
+    QSpacerItem,
+    QSizePolicy,
+    QMenuBar,
+    QAction,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
@@ -59,8 +64,6 @@ class EventDelegate(QStyledItemDelegate):
                         QToolTip.showText(event.globalPos(), tooltip_text)
                         return True
         return super().helpEvent(event, view, option, index)
-
-
 
 
 class TimelineTable(QTableWidget):
@@ -217,6 +220,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Timeline Table with Dual Range Slider")
         self.resize(2048, 1200)  # Adjust size as needed
 
+        # Menu Bar
+        self.create_menu()
+
         # Load events and generate time intervals
         self.events = self.load_event_data("parker.json")
         self.time_intervals = self.generate_time_intervals(self.events)
@@ -232,6 +238,17 @@ class MainWindow(QMainWindow):
 
         # Call setup_slider_panel to set up the slider with labels - Bottom
         self.setup_slider_panel(main_layout)
+
+    def create_menu(self):
+        """Create the menu bar with a File menu and Exit option."""
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("File")
+
+        # Exit Action
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+X")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
     def setup_slider_panel(self, main_layout):
         """Set up the slider panel with proper spacing and layout."""
@@ -261,7 +278,6 @@ class MainWindow(QMainWindow):
 
         # Add the range slider panel to the main layout, anchoring to the bottom
         main_layout.addWidget(self.range_slider_panel)
-
 
     def showEvent(self, event):
         """Ensure the table resizes to fit the window width after the window is shown."""
