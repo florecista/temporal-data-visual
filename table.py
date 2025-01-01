@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLabel,
-    QHBoxLayout,
+    QHBoxLayout, QToolTip,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
@@ -18,7 +18,7 @@ import pyqtgraph as pg
 
 
 class EventDelegate(QStyledItemDelegate):
-    """Custom delegate to render events as dots in table cells."""
+    """Custom delegate to render events as dots in table cells and show tooltips."""
     def paint(self, painter, option, index):
         painter.save()
         item_data = index.data(Qt.UserRole)
@@ -33,6 +33,19 @@ class EventDelegate(QStyledItemDelegate):
         else:
             super().paint(painter, option, index)
         painter.restore()
+
+    def helpEvent(self, event, view, option, index):
+        """Handle tooltip display."""
+        if event.type() == event.ToolTip:
+            item_data = index.data(Qt.UserRole)
+            if isinstance(item_data, dict):
+                title = item_data.get("title", "Unknown Event")
+                time = item_data.get("time", "Unknown Time")
+                tooltip_text = f"<b>{title}</b><br>{time}"
+                QToolTip.showText(event.globalPos(), tooltip_text)
+                return True
+        return super().helpEvent(event, view, option, index)
+
 
 
 class TimelineTable(QTableWidget):
