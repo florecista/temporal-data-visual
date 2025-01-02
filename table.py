@@ -16,6 +16,8 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QMenuBar,
     QAction,
+    QFileDialog,
+    QMessageBox,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
@@ -94,6 +96,10 @@ class TimelineTable(QTableWidget):
 
         # Border toggle
         self.toggle_borders(show_borders)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.resize_columns_to_fit()
 
     def populate_date_header(self):
         """Populate the first header row with dates."""
@@ -193,25 +199,26 @@ class TimelineTable(QTableWidget):
 
     def resize_columns_to_fit(self):
         """Resize columns to fit the table width, considering the Entity Name column."""
+        print("Resizing columns to fit the table width.")
         total_width = self.viewport().width()
+        print(f"Table viewport width: {total_width}")
         entity_column_width = 150  # Fixed width for the Entity Name column
         visible_columns = [col for col in range(1, self.columnCount()) if not self.isColumnHidden(col)]
 
         if not visible_columns:
+            print("No visible columns to resize.")
             return
 
-        # Calculate the total width available for data columns
         data_columns_width = total_width - entity_column_width
-
-        # Ensure at least one column is visible
         column_width = max(data_columns_width // len(visible_columns), 1)
 
-        # Resize the Entity Name column
-        self.setColumnWidth(0, entity_column_width)
+        print(
+            f"Entity column width: {entity_column_width}, Data columns width: {data_columns_width}, Individual column width: {column_width}")
 
-        # Resize each visible data column
+        self.setColumnWidth(0, entity_column_width)
         for col in visible_columns:
             self.setColumnWidth(col, column_width)
+        print("Finished resizing columns.")
 
 
 class MainWindow(QMainWindow):
@@ -223,32 +230,63 @@ class MainWindow(QMainWindow):
         # Menu Bar
         self.create_menu()
 
-        # Load events and generate time intervals
-        self.events = self.load_event_data("parker.json")
-        self.time_intervals = self.generate_time_intervals(self.events)
+        # Initialize attributes
+        self.slider_widget = None
+        self.range_slider = None
+        self.timeline_table = None
+        self.events = {}
+        self.time_intervals = []
 
         # Main Layout
-        main_widget = QWidget()
-        main_layout = QVBoxLayout(main_widget)
-        self.setCentralWidget(main_widget)
-
-        # Timeline Table - Centered
-        self.timeline_table = TimelineTable(self.events, self.time_intervals, show_borders=False)
-        main_layout.addWidget(self.timeline_table)
-
-        # Call setup_slider_panel to set up the slider with labels - Bottom
-        self.setup_slider_panel(main_layout)
+        self.main_widget = QWidget()
+        self.main_layout = QVBoxLayout(self.main_widget)
+        self.setCentralWidget(self.main_widget)
 
     def create_menu(self):
-        """Create the menu bar with a File menu and Exit option."""
+        """Create the menu bar with File > Open and Exit options."""
         menubar = self.menuBar()
         file_menu = menubar.addMenu("File")
+
+        # Open Action
+        open_action = QAction("Open", self)
+        open_action.setShortcut("Ctrl+O")
+        open_action.triggered.connect(self.open_file)
+        file_menu.addAction(open_action)
 
         # Exit Action
         exit_action = QAction("Exit", self)
         exit_action.setShortcut("Ctrl+X")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+
+    def open_file(self):
+        """Open a JSON file and load its data."""
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open Event Data", "", "JSON Files (*.json)")
+        if not file_path:
+            return  # No file selected
+
+        try:
+            self.events = self.load_event_data(file_path)
+            self.time_intervals = self.generate_time_intervals(self.events)
+
+            # Clear the current layout and reload the table
+            for i in reversed(range(self.main_layout.count())):
+                widget = self.main_layout.itemAt(i).widget()
+                if widget:
+                    widget.deleteLater()
+
+            # Add timeline table and slider panel
+            self.timeline_table = TimelineTable(self.events, self.time_intervals, show_borders=False)
+            self.main_layout.addWidget(self.timeline_table)
+            self.setup_slider_panel(self.main_layout)
+
+            # Resize columns to fit initially
+            self.timeline_table.resize_columns_to_fit()
+
+            # Ensure the main window updates correctly
+            self.update()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load file: {e}")
 
     def setup_slider_panel(self, main_layout):
         """Set up the slider panel with proper spacing and layout."""
@@ -273,33 +311,11 @@ class MainWindow(QMainWindow):
 
         # Label Layout
         self.label_layout = QHBoxLayout()
-        self.add_slider_labels(self.label_layout)  # Add labels to the layout
+        self.add_slider_labels(self.label_layout)
         panel_layout.addLayout(self.label_layout)
 
         # Add the range slider panel to the main layout, anchoring to the bottom
         main_layout.addWidget(self.range_slider_panel)
-
-    def showEvent(self, event):
-        """Ensure the table resizes to fit the window width after the window is shown."""
-        super().showEvent(event)
-        self.update_table_view()  # Resize columns after the window is fully visible
-
-    def add_date_range_labels(self, layout, min_time, max_time):
-        """Add date labels at west and east ends of the slider."""
-        # Add the first date (west-aligned)
-        first_label = QLabel(min_time.strftime("%d-%b"))
-        first_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        layout.addWidget(first_label, alignment=Qt.AlignLeft)
-
-        # Add spacer for intermediate space
-        spacer = QLabel()  # Empty spacer
-        layout.addWidget(spacer, alignment=Qt.AlignCenter)
-
-        # Add the next day's date (east-aligned)
-        next_day = min_time + timedelta(days=1)
-        last_label = QLabel(next_day.strftime("%d-%b"))
-        last_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        layout.addWidget(last_label, alignment=Qt.AlignRight)
 
     def add_slider_labels(self, layout):
         """Add date labels dynamically with proper vertical spacing."""
@@ -313,26 +329,13 @@ class MainWindow(QMainWindow):
             if widget:
                 widget.deleteLater()
 
-        if min_time.date() == max_time.date():
-            # Single centered label
-            label = QLabel(min_time.strftime("%d-%b"))
+        # Add labels for each day in the range
+        current_time = min_time
+        while current_time <= max_time:
+            label = QLabel(current_time.strftime("%d-%b"))
             label.setAlignment(Qt.AlignCenter)
             layout.addWidget(label, alignment=Qt.AlignCenter)
-        else:
-            # Add first label (west-aligned)
-            first_label = QLabel(min_time.strftime("%d-%b"))
-            first_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-            layout.addWidget(first_label, alignment=Qt.AlignLeft)
-
-            # Spacer for intermediate space
-            spacer = QLabel()
-            layout.addWidget(spacer)
-
-            # Add last label (east-aligned)
-            next_day = min_time + timedelta(days=1)
-            last_label = QLabel(next_day.strftime("%d-%b"))
-            last_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            layout.addWidget(last_label, alignment=Qt.AlignRight)
+            current_time += timedelta(days=1)
 
     def load_event_data(self, file_path):
         """Load event data from a JSON file with validation."""
@@ -346,15 +349,23 @@ class MainWindow(QMainWindow):
             events[entity] = {}
             for event, details in entity_events.items():
                 if isinstance(details, dict) and "DateTime" in details:
+                    # If details is a dictionary with "DateTime", process normally
                     dt = details.get("DateTime")
                     if isinstance(dt, str):
                         try:
-                            # Validate DateTime format
                             parsed_dt = datetime.fromisoformat(dt)
                             all_times.append(parsed_dt)
                             events[entity][event] = details
                         except ValueError:
                             print(f"Invalid DateTime format for event: {event} in {entity}. Details: {dt}")
+                elif isinstance(details, str):
+                    # If details is a simple ISO 8601 string, treat it as a valid date
+                    try:
+                        parsed_dt = datetime.fromisoformat(details)
+                        all_times.append(parsed_dt)
+                        events[entity][event] = {"DateTime": details}  # Wrap it in a dictionary for consistency
+                    except ValueError:
+                        print(f"Invalid DateTime string for event: {event} in {entity}. Details: {details}")
                 else:
                     print(f"Skipping invalid event: {event} for {entity}. Details: {details}")
 
@@ -399,12 +410,38 @@ class MainWindow(QMainWindow):
     def on_range_slider_change(self):
         """Handle changes to the range slider."""
         start_index, end_index = map(int, self.range_slider.getRegion())
-        self.timeline_table.set_visible_columns(start_index, end_index)
-        self.timeline_table.resize_columns_to_fit()
+        if self.timeline_table:
+            self.timeline_table.set_visible_columns(start_index, end_index)
+            self.timeline_table.resize_columns_to_fit()
+
+    def showEvent(self, event):
+        """Ensure the table resizes to fit the window width after the window is shown."""
+        super().showEvent(event)
+        if self.timeline_table:
+            self.timeline_table.resize_columns_to_fit()
 
     def update_table_view(self):
-        """Initial update to resize columns."""
+        """Resize columns immediately upon application launch."""
+        if self.timeline_table:
+            self.timeline_table.resize_columns_to_fit()
+
+    def create_timeline_table(self):
+        """Create the timeline table and setup the slider panel."""
+        # Clear the current layout
+        for i in reversed(range(self.main_layout.count())):
+            widget = self.main_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        # Add the timeline table
+        self.timeline_table = TimelineTable(self.events, self.time_intervals, show_borders=False)
+        self.main_layout.addWidget(self.timeline_table)
+
+        # Resize columns to fit initially
         self.timeline_table.resize_columns_to_fit()
+
+        # Add the slider panel
+        self.setup_slider_panel(self.main_layout)
 
 
 if __name__ == "__main__":
