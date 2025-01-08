@@ -17,9 +17,10 @@ from PyQt5.QtWidgets import (
     QMenuBar,
     QAction,
     QFileDialog,
-    QMessageBox, QSplitter, QListWidget, QAbstractItemView, QListWidgetItem,
+    QMessageBox, QSplitter, QListWidget, QAbstractItemView, QListWidgetItem, QFormLayout, QDateEdit, QTimeEdit,
+    QLineEdit,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDate, QTime
 from PyQt5.QtGui import QPainter, QColor
 import pyqtgraph as pg
 
@@ -224,48 +225,47 @@ class TimelineTable(QTableWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Timeline Table with Event Panel")
-        self.resize(2048, 1200)  # Adjust size as needed
+        self.setWindowTitle("Timeline Table with Event Detail Panel")
+        self.resize(2048, 1200)
 
         # Menu Bar
         self.create_menu()
 
-        # Initialize attributes
-        self.slider_widget = None
-        self.range_slider = None
-        self.timeline_table = None
-        self.events = {}
-        self.time_intervals = []
-        self.event_list_widget = None  # New: Event list panel
-
-        # Main Layout
+        # Main Layout: Central Splitter
         self.central_splitter = QSplitter(Qt.Horizontal)
         self.setCentralWidget(self.central_splitter)
 
-        # Add Timeline Table and Slider to the CENTER
+        # CENTER: Timeline Table and Slider
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
         self.central_splitter.addWidget(self.main_widget)
 
-        # Add Event Details Panel to the EAST
+        # EAST: Event List and Details
+        self.event_splitter = QSplitter(Qt.Vertical)  # Event List (top) and Details Panel (bottom)
+        self.central_splitter.addWidget(self.event_splitter)
+
+        # EAST-TOP: Event List
         self.event_list_widget = QListWidget()
         self.event_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
         self.event_list_widget.itemClicked.connect(self.on_event_selected)
-        self.central_splitter.addWidget(self.event_list_widget)
+        self.event_splitter.addWidget(self.event_list_widget)
 
-        # Set initial splitter sizes
-        self.central_splitter.setSizes([1200, 300])  # Adjust proportions
+        # EAST-BOTTOM: Detail Panel
+        self.event_detail_panel = QWidget()
+        self.event_detail_layout = QFormLayout(self.event_detail_panel)
+        self.event_detail_layout.setLabelAlignment(Qt.AlignLeft)
+        self.event_splitter.addWidget(self.event_detail_panel)
 
-    def on_event_selected(self, item):
-        """Highlight the row in the timeline table when an event is clicked."""
-        entity = item.data(Qt.UserRole)["entity"]
-        row_index = item.data(Qt.UserRole)["row"]
-        self.timeline_table.selectRow(row_index)
-        self.timeline_table.scrollToItem(self.timeline_table.item(row_index, 0))
+        # Set Splitter Sizes
+        self.central_splitter.setSizes([1200, 0])  # Hide EAST panel by setting its width to 0
+        self.event_splitter.setSizes([400, 200])  # EAST-TOP:EAST-BOTTOM proportions
 
     def populate_event_list(self):
-        """Populate the event list panel with events."""
+        """Populate the event list panel with events and select the first event."""
         self.event_list_widget.clear()  # Clear existing items
+
+        first_item = None  # Track the first item for auto-selection
+
         for row, (entity, entity_events) in enumerate(self.events.items()):
             if entity == "min_datetime":
                 continue
@@ -280,8 +280,43 @@ class MainWindow(QMainWindow):
 
                 # Add to the event list
                 list_item = QListWidgetItem(display_text)
-                list_item.setData(Qt.UserRole, {"entity": entity, "row": row})
+                list_item.setData(Qt.UserRole, {"entity": entity, "row": row, "details": details})
                 self.event_list_widget.addItem(list_item)
+
+                # Save the first item for auto-selection
+                if first_item is None:
+                    first_item = list_item
+
+        # Auto-select the first item and display its details
+        if first_item:
+            self.event_list_widget.setCurrentItem(first_item)
+            self.on_event_selected(first_item)
+
+    def on_event_selected(self, item):
+        """Populate the detail panel when an event is selected."""
+        event_data = item.data(Qt.UserRole)
+        details = event_data["details"]
+
+        # Clear the detail panel
+        for i in reversed(range(self.event_detail_layout.count())):
+            widget = self.event_detail_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        # Populate Date and Time fields
+        if "DateTime" in details:
+            dt = datetime.fromisoformat(details["DateTime"])
+            date_edit = QDateEdit(QDate(dt.year, dt.month, dt.day))
+            time_edit = QTimeEdit(QTime(dt.hour, dt.minute))
+            self.event_detail_layout.addRow("Date:", date_edit)
+            self.event_detail_layout.addRow("Time:", time_edit)
+
+        # Populate additional fields
+        for key, value in details.items():
+            if key == "DateTime":
+                continue  # Skip DateTime (already added)
+            field = QLineEdit(str(value))
+            self.event_detail_layout.addRow(f"{key}:", field)
 
     def open_file(self):
         """Open a JSON file and load its data."""
@@ -309,6 +344,9 @@ class MainWindow(QMainWindow):
 
             # Resize columns to fit initially
             self.timeline_table.resize_columns_to_fit()
+
+            # Ensure the EAST panel is visible
+            self.central_splitter.setSizes([1200, 600])  # Adjust proportions to show EAST panel
 
             # Ensure the main window updates correctly
             self.update()
