@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
     QMenuBar,
     QAction,
     QFileDialog,
-    QMessageBox,
+    QMessageBox, QSplitter, QListWidget, QAbstractItemView, QListWidgetItem,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
@@ -224,7 +224,7 @@ class TimelineTable(QTableWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Timeline Table with Dual Range Slider")
+        self.setWindowTitle("Timeline Table with Event Panel")
         self.resize(2048, 1200)  # Adjust size as needed
 
         # Menu Bar
@@ -236,28 +236,52 @@ class MainWindow(QMainWindow):
         self.timeline_table = None
         self.events = {}
         self.time_intervals = []
+        self.event_list_widget = None  # New: Event list panel
 
         # Main Layout
+        self.central_splitter = QSplitter(Qt.Horizontal)
+        self.setCentralWidget(self.central_splitter)
+
+        # Add Timeline Table and Slider to the CENTER
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
-        self.setCentralWidget(self.main_widget)
+        self.central_splitter.addWidget(self.main_widget)
 
-    def create_menu(self):
-        """Create the menu bar with File > Open and Exit options."""
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("File")
+        # Add Event Details Panel to the EAST
+        self.event_list_widget = QListWidget()
+        self.event_list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.event_list_widget.itemClicked.connect(self.on_event_selected)
+        self.central_splitter.addWidget(self.event_list_widget)
 
-        # Open Action
-        open_action = QAction("Open", self)
-        open_action.setShortcut("Ctrl+O")
-        open_action.triggered.connect(self.open_file)
-        file_menu.addAction(open_action)
+        # Set initial splitter sizes
+        self.central_splitter.setSizes([1200, 300])  # Adjust proportions
 
-        # Exit Action
-        exit_action = QAction("Exit", self)
-        exit_action.setShortcut("Ctrl+X")
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+    def on_event_selected(self, item):
+        """Highlight the row in the timeline table when an event is clicked."""
+        entity = item.data(Qt.UserRole)["entity"]
+        row_index = item.data(Qt.UserRole)["row"]
+        self.timeline_table.selectRow(row_index)
+        self.timeline_table.scrollToItem(self.timeline_table.item(row_index, 0))
+
+    def populate_event_list(self):
+        """Populate the event list panel with events."""
+        self.event_list_widget.clear()  # Clear existing items
+        for row, (entity, entity_events) in enumerate(self.events.items()):
+            if entity == "min_datetime":
+                continue
+
+            for event_name, details in entity_events.items():
+                if "DateTime" not in details:
+                    continue  # Skip non-datetime events
+
+                # Format event details
+                event_time = datetime.fromisoformat(details["DateTime"])
+                display_text = f"{event_time.strftime('%d-%b %I:%M %p')} - {event_name} ({entity})"
+
+                # Add to the event list
+                list_item = QListWidgetItem(display_text)
+                list_item.setData(Qt.UserRole, {"entity": entity, "row": row})
+                self.event_list_widget.addItem(list_item)
 
     def open_file(self):
         """Open a JSON file and load its data."""
@@ -280,6 +304,9 @@ class MainWindow(QMainWindow):
             self.main_layout.addWidget(self.timeline_table)
             self.setup_slider_panel(self.main_layout)
 
+            # Populate event list in the EAST panel
+            self.populate_event_list()
+
             # Resize columns to fit initially
             self.timeline_table.resize_columns_to_fit()
 
@@ -299,7 +326,10 @@ class MainWindow(QMainWindow):
         panel_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # Slider Widget
-        self.slider_widget = pg.PlotWidget()
+        try:
+            self.slider_widget = pg.PlotWidget()
+        except Exception as e:
+            print(f"An error occurred while initializing PlotWidget: {e}")
         self.range_slider = pg.LinearRegionItem([0, len(self.time_intervals) - 1])
         self.range_slider.setZValue(10)
         self.range_slider.sigRegionChanged.connect(self.on_range_slider_change)
@@ -442,6 +472,42 @@ class MainWindow(QMainWindow):
 
         # Add the slider panel
         self.setup_slider_panel(self.main_layout)
+
+
+    def create_menu(self):
+        """Create the menu bar with File > Open, Exit, and Panel toggle options."""
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("File")
+
+        # Open Action
+        open_action = QAction("Open", self)
+        open_action.setShortcut("Ctrl+O")
+        open_action.triggered.connect(self.open_file)
+        file_menu.addAction(open_action)
+
+        # Exit Action
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut("Ctrl+X")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # View Menu
+        view_menu = menubar.addMenu("View")
+
+        # Toggle Event Panel Action
+        toggle_panel_action = QAction("Show/Hide Event Panel", self)
+        toggle_panel_action.setCheckable(True)
+        toggle_panel_action.setChecked(True)
+        toggle_panel_action.triggered.connect(self.toggle_event_panel)
+        view_menu.addAction(toggle_panel_action)
+
+    def toggle_event_panel(self):
+        """Show or hide the event list panel."""
+        if self.event_list_widget.isVisible():
+            self.event_list_widget.hide()
+        else:
+            self.event_list_widget.show()
+
 
 
 if __name__ == "__main__":
