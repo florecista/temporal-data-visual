@@ -18,9 +18,9 @@ from PyQt5.QtWidgets import (
     QAction,
     QFileDialog,
     QMessageBox, QSplitter, QListWidget, QAbstractItemView, QListWidgetItem, QFormLayout, QDateEdit, QTimeEdit,
-    QLineEdit,
+    QLineEdit, QDateTimeEdit, QSlider,
 )
-from PyQt5.QtCore import Qt, QDate, QTime
+from PyQt5.QtCore import Qt, QDate, QTime, QDateTime
 from PyQt5.QtGui import QPainter, QColor
 import pyqtgraph as pg
 
@@ -354,36 +354,87 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to load file: {e}")
 
     def setup_slider_panel(self, main_layout):
-        """Set up the slider panel with proper spacing and layout."""
+        """Set up the dual-carat range slider with DateTime edits."""
         # Create the range slider panel
         self.range_slider_panel = QWidget()
-        self.range_slider_panel.setFixedHeight(120)  # Fixed height for the panel containing the slider + labels
+        self.range_slider_panel.setFixedHeight(100)
         panel_layout = QVBoxLayout(self.range_slider_panel)
 
-        # Add an expanding spacer at the top to push everything down
-        panel_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        # Add an expanding spacer
+        panel_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
-        # Slider Widget
-        try:
-            self.slider_widget = pg.PlotWidget()
-        except Exception as e:
-            print(f"An error occurred while initializing PlotWidget: {e}")
-        self.range_slider = pg.LinearRegionItem([0, len(self.time_intervals) - 1])
-        self.range_slider.setZValue(10)
-        self.range_slider.sigRegionChanged.connect(self.on_range_slider_change)
-        self.slider_widget.addItem(self.range_slider)
-        self.slider_widget.setFixedHeight(60)  # Fixed height for the slider
-        self.slider_widget.getPlotItem().hideAxis("left")
-        self.slider_widget.getPlotItem().hideAxis("bottom")
-        panel_layout.addWidget(self.slider_widget)
+        # Create DateTime Edit widgets
+        self.start_datetime_edit = QDateTimeEdit(QDateTime(self.time_intervals[0]))
+        self.start_datetime_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.start_datetime_edit.dateTimeChanged.connect(self.on_start_datetime_changed)
 
-        # Label Layout
-        self.label_layout = QHBoxLayout()
-        self.add_slider_labels(self.label_layout)
-        panel_layout.addLayout(self.label_layout)
+        self.end_datetime_edit = QDateTimeEdit(QDateTime(self.time_intervals[-1]))
+        self.end_datetime_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.end_datetime_edit.dateTimeChanged.connect(self.on_end_datetime_changed)
 
-        # Add the range slider panel to the main layout, anchoring to the bottom
+        # Create dual sliders
+        self.start_slider = QSlider(Qt.Horizontal)
+        self.start_slider.setMinimum(0)
+        self.start_slider.setMaximum(len(self.time_intervals) - 1)
+        self.start_slider.setValue(0)
+        self.start_slider.valueChanged.connect(self.on_slider_change)
+
+        self.end_slider = QSlider(Qt.Horizontal)
+        self.end_slider.setMinimum(0)
+        self.end_slider.setMaximum(len(self.time_intervals) - 1)
+        self.end_slider.setValue(len(self.time_intervals) - 1)
+        self.end_slider.valueChanged.connect(self.on_slider_change)
+
+        # Add sliders and DateTime Edits to the layout
+        slider_layout = QVBoxLayout()
+        slider_layout.addWidget(self.start_slider)
+        slider_layout.addWidget(self.end_slider)
+
+        datetime_layout = QHBoxLayout()
+        datetime_layout.addWidget(self.start_datetime_edit)
+        datetime_layout.addStretch()
+        datetime_layout.addWidget(self.end_datetime_edit)
+
+        # Add layouts to the panel
+        panel_layout.addLayout(slider_layout)
+        panel_layout.addLayout(datetime_layout)
+
+        # Add the range slider panel to the main layout
         main_layout.addWidget(self.range_slider_panel)
+
+    def on_slider_change(self):
+        """Handle slider changes and update DateTime edits."""
+        start_index = self.start_slider.value()
+        end_index = self.end_slider.value()
+
+        # Ensure sliders don't cross over
+        if start_index > end_index:
+            self.start_slider.setValue(end_index)
+            return
+        if end_index < start_index:
+            self.end_slider.setValue(start_index)
+            return
+
+        # Update DateTime edits
+        self.start_datetime_edit.setDateTime(self.time_intervals[start_index])
+        self.end_datetime_edit.setDateTime(self.time_intervals[end_index])
+
+        # Update table visibility
+        if self.timeline_table:
+            self.timeline_table.set_visible_columns(start_index, end_index)
+            self.timeline_table.resize_columns_to_fit()
+
+    def on_start_datetime_changed(self):
+        """Update the start slider when the DateTime edit changes."""
+        start_dt = self.start_datetime_edit.dateTime().toPyDateTime()
+        start_index = next((i for i, t in enumerate(self.time_intervals) if t >= start_dt), 0)
+        self.start_slider.setValue(start_index)
+
+    def on_end_datetime_changed(self):
+        """Update the end slider when the DateTime edit changes."""
+        end_dt = self.end_datetime_edit.dateTime().toPyDateTime()
+        end_index = next((i for i, t in enumerate(self.time_intervals) if t >= end_dt), len(self.time_intervals) - 1)
+        self.end_slider.setValue(end_index)
 
     def add_slider_labels(self, layout):
         """Add date labels dynamically with proper vertical spacing."""
